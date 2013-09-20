@@ -55,9 +55,9 @@ func TestHistogram(t *testing.T) {
 func TestMarshal(t *testing.T) {
 	t1 := at("2:00PM")
 	t2 := time.Now().Truncate(time.Second)
-	data := TimeSeries{
-		{t1, 11},
-		{t2, 12},
+	data := EventList{
+		{t1, time.Now(), 11},
+		{t2, time.Now(), 12},
 	}
 	exp := fmt.Sprintf("[[%d,11],[%d,12]]", t1.Unix()*1000, t2.Unix()*1000)
 	m, err := json.Marshal(data)

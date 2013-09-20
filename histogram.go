@@ -103,45 +103,29 @@ func Histogram(events EventList, resolution time.Duration, begin, end time.Time)
 	}
 
 	// Setup render plot
-	renderSize := int(math.Ceil(end.Sub(begin).Seconds() / resolution.Seconds()))
-	render := make(EventList, renderSize)
-	for i := range render {
-		render[i].Begin = begin.Add(resolution * time.Duration(i))
-		render[i].End = begin.Add(resolution * time.Duration(i+1))
+	bucketCount := int(math.Ceil(end.Sub(begin).Seconds() / resolution.Seconds()))
+	buckets := make(EventList, bucketCount)
+	for i := range buckets {
+		buckets[i].Begin = begin.Add(resolution * time.Duration(i))
+		buckets[i].End = begin.Add(resolution * time.Duration(i+1))
 	}
 
 	// Render
 	i := 0 // For reduced
-	j := 0 // For rendered
-	for i < len(reduced) && j < len(render) {
+	j := 0 // For buckets
+	for i < len(reduced) && j < len(buckets) {
 		// Update if they overlap
-		if reduced[i].Overlaps(render[j]) {
-			render[j].Data = max(render[j].Data, reduced[i].Data)
+		if reduced[i].Overlaps(buckets[j]) {
+			buckets[j].Data = max(buckets[j].Data, reduced[i].Data)
 		}
+
 		// Advance the least
-		if render[j].End.Before(reduced[i].End) {
+		if buckets[j].End.Before(reduced[i].End) {
 			j++
 		} else {
 			i++
 		}
 	}
 
-	return render
-}
-
-// For JSON output.
-type TimeSeries []DataPoint
-
-func (ts TimeSeries) MarshalJSON() ([]byte, error) {
-	m := make([][2]int64, len(ts))
-	for i, pt := range ts {
-		m[i][0] = pt.Begin.Unix() * 1000
-		m[i][1] = pt.Data
-	}
-	return json.Marshal(m)
-}
-
-type DataPoint struct {
-	Begin time.Time
-	Data  int64
+	return buckets
 }
